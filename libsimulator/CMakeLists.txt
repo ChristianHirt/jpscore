@@ -74,6 +74,7 @@ target_link_libraries(simulator PUBLIC
     poly2tri
     fmt::fmt
     CGAL::CGAL
+    build_info
 )
 target_link_options(simulator PUBLIC 
     $<$<AND:$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>,$<BOOL:${BUILD_WITH_ASAN}>>:-fsanitize=address>
@@ -91,6 +92,7 @@ if (BUILD_TESTS)
     add_executable(libsimulator-tests
         test/TestAABB.cpp
         test/TestBasicPrimitiveTests.cpp
+        test/TestCollisionGeometry.cpp
         test/TestGraph.cpp
         test/TestLineSegment.cpp
         test/TestNeighborhoodSearch.cpp
@@ -111,3 +113,25 @@ if (BUILD_TESTS)
     set_property(TARGET libsimulator-tests PROPERTY INTERPROCEDURAL_OPTIMIZATION ${USE_IPO})
     set_property(TARGET libsimulator-tests PROPERTY INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
 endif()
+
+################################################################################
+# libjupedsim micro benchmarks
+################################################################################
+if (BUILD_BENCHMARKS)
+    add_executable(libsimulator-benchmarks
+        benchmark/BenchmarkMain.cpp
+        benchmark/benchmarkLineSegment.hpp
+    )
+
+    target_link_libraries(libsimulator-benchmarks PRIVATE
+        benchmark::benchmark
+        simulator
+    )
+
+    target_compile_options(libsimulator-benchmarks PRIVATE
+        ${COMMON_COMPILE_OPTIONS}
+    )
+
+    set_property(TARGET libsimulator-benchmarks PROPERTY INTERPROCEDURAL_OPTIMIZATION ${USE_IPO})
+    set_property(TARGET libsimulator-benchmarks PROPERTY INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
+endif ()

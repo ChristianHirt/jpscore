@@ -111,8 +111,13 @@ Geometry GeometryBuilder::Build()
         std::end(_exclusions),
         std::back_inserter(exclusionAreaInput),
         [](const auto& p) { return intoCGALPolygon(p, Ordering::CCW); });
+    PolyWithHolesList exclusionsList{};
+    CGAL::join(
+        std::begin(exclusionAreaInput),
+        std::end(exclusionAreaInput),
+        std::back_inserter(exclusionsList));
 
-    for(const auto& ex : exclusionAreaInput) {
+    for(const auto& ex : exclusionsList) {
         PolyWithHolesList res{};
         CGAL::difference(accessibleArea, ex, std::back_inserter(res));
         if(res.size() != 1) {
@@ -192,10 +197,14 @@ Geometry GeometryBuilder::Build()
             const auto edge_from = t->GetPoint(idx_edge_from);
             const auto idx_edge_to = (index + 2) % 3;
             const auto edge_to = t->GetPoint(idx_edge_to);
-            builder.AddEdge(
-                id,
-                neighbor_id,
-                {weight, {{edge_from->x, edge_from->y}, {edge_to->x, edge_to->y}}});
+
+            auto from = Point(edge_from->x, edge_from->y);
+            auto to = Point(edge_to->x, edge_to->y);
+            const auto dir = (to - from).Normalized();
+            from = from + dir * 0.2;
+            to = to - dir * 0.2;
+
+            builder.AddEdge(id, neighbor_id, {weight, {from, to}});
             toVisit.push(neighbor);
         }
     }

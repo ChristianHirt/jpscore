@@ -1,5 +1,6 @@
 /// Copyright © 2012-2022 Forschungszentrum Jülich GmbH
 /// SPDX-License-Identifier: LGPL-3.0-or-later
+#include <Unreachable.hpp>
 #include <jupedsim/jupedsim.h>
 #include <jupedsim/jupedsim_experimental.h>
 
@@ -7,13 +8,13 @@
 #include <exception>
 #include <iterator>
 #include <memory>
-#include <pybind11/cast.h>
-#include <pybind11/detail/common.h>
 #include <stdexcept>
 #include <vector>
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <pybind11/cast.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -123,6 +124,13 @@ PYBIND11_MODULE(py_jupedsim, m)
         JPS_Logging_SetErrorCallback(
             [](const char* msg, void*) { LogCallbackOwner::Instance().error(msg); }, nullptr);
     });
+    py::class_<JPS_BuildInfo>(m, "BuildInfo")
+        .def_readonly("git_commit_hash", &JPS_BuildInfo::git_commit_hash)
+        .def_readonly("git_commit_date", &JPS_BuildInfo::git_commit_date)
+        .def_readonly("git_branch", &JPS_BuildInfo::git_branch)
+        .def_readonly("compiler", &JPS_BuildInfo::compiler)
+        .def_readonly("compiler_version", &JPS_BuildInfo::compiler_version);
+    m.def("get_build_info", []() { return JPS_GetBuildInfo(); });
     py::class_<JPS_Point>(m, "Point")
         .def(py::init())
         .def(py::init([](std::tuple<double, double> tup) {
@@ -566,7 +574,6 @@ PYBIND11_MODULE(py_jupedsim, m)
                         auto msg = std::string(JPS_ErrorMessage_GetMessage(errorMsg));
                         JPS_ErrorMessage_Free(errorMsg);
                         throw std::runtime_error{msg};
-                        break;
                     }
                     case JPS_VelocityModel: {
                         JPS_VelocityModelAgentParameters agent{};
@@ -578,9 +585,9 @@ PYBIND11_MODULE(py_jupedsim, m)
                         auto msg = std::string(JPS_ErrorMessage_GetMessage(errorMsg));
                         JPS_ErrorMessage_Free(errorMsg);
                         throw std::runtime_error{msg};
-                        break;
                     }
                 }
+                UNREACHABLE();
             })
         .def(
             "removed_agents",
@@ -678,6 +685,7 @@ PYBIND11_MODULE(py_jupedsim, m)
                         return Iterators{std::make_unique<JPS_VelocityModelAgentIterator_Wrapper>(
                             JPS_Simulation_VelocityModelAgentIterator(simulation.handle))};
                 }
+                UNREACHABLE();
             })
         .def(
             "agents_in_range",

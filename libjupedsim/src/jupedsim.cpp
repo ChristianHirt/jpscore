@@ -9,6 +9,7 @@
 #include "Stage.hpp"
 
 #include "gtest/gtest.h"
+#include <BuildInfo.hpp>
 #include <CollisionGeometry.hpp>
 #include <Conversion.hpp>
 #include <GCFMModel.hpp>
@@ -23,6 +24,7 @@
 #include <RoutingEngine.hpp>
 #include <Simulation.hpp>
 #include <StageDescription.hpp>
+#include <Unreachable.hpp>
 #include <VelocityModel.hpp>
 #include <VelocityModelBuilder.hpp>
 
@@ -34,6 +36,19 @@
 #include <string>
 #include <tuple>
 #include <vector>
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// BuildInfo
+////////////////////////////////////////////////////////////////////////////////////////////////////
+JPS_BuildInfo JPS_GetBuildInfo()
+{
+    return JPS_BuildInfo{
+        GIT_COMMIT_HASH.c_str(),
+        GIT_COMMIT_DATE.c_str(),
+        GIT_BRANCH.c_str(),
+        COMPILER.c_str(),
+        COMPILER_VERSION.c_str()};
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Logging
@@ -864,11 +879,7 @@ JPS_ModelType JPS_Simulation_ModelType(JPS_Simulation handle)
        simulation != nullptr) {
         return JPS_VelocityModel;
     }
-#if defined(__GNUC__) // GCC, Clang, ICC
-    __builtin_unreachable();
-#elif defined(_MSC_VER) // MSVC
-    __assume(false);
-#endif
+    UNREACHABLE();
 }
 
 JPS_AgentIdIterator

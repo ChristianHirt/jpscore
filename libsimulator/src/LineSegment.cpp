@@ -11,7 +11,7 @@
 
 #include <vector>
 
-#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Simple_cartesian.h>
 #include <CGAL/intersections.h>
 #include <boost/variant.hpp>
 
@@ -27,6 +27,11 @@ bool LineSegment::operator==(const LineSegment& other) const
 bool LineSegment::operator!=(const LineSegment& other) const
 {
     return !(*this == other);
+}
+
+bool LineSegment::operator<(const LineSegment& other) const
+{
+    return p1 < other.p1 || p2 < other.p2;
 }
 
 Point LineSegment::NormalVec() const
@@ -73,13 +78,16 @@ Point LineSegment::ShortestPoint(const Point& p) const
         return p2 + t * lambda;
 }
 
-/* Berechnet direkt den Abstand von p zum Segment l
- * dazu wird die Funktion Line::ShortestPoint()
- * benuzt
- * */
 double LineSegment::DistTo(const Point& p) const
 {
-    return (p - ShortestPoint(p)).Norm();
+    using Kernel = CGAL::Simple_cartesian<double>;
+    using PointCGAL = Kernel::Point_2;
+    using SegmentCGAL = Kernel::Segment_2;
+
+    PointCGAL point(p.x, p.y);
+    SegmentCGAL segment(PointCGAL(p1.x, p1.y), PointCGAL(p2.x, p2.y));
+
+    return sqrt(CGAL::squared_distance(point, segment));
 }
 
 double LineSegment::LengthSquare() const

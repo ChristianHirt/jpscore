@@ -47,6 +47,9 @@ print_var(BUILD_WITH_ASAN)
 if(BUILD_WITH_ASAN AND ${CMAKE_SYSTEM} MATCHES "Windows")
     message(FATAL_ERROR "Address sanitizer builds are not supported on Windows")
 endif()
+
+set(BUILD_BENCHMARKS OFF CACHE BOOL "Build micro benchmark")
+print_var(BUILD_BENCHMARKS)
 ################################################################################
 # Compilation flags
 ################################################################################
@@ -64,10 +67,10 @@ list(APPEND COMMON_COMPILE_OPTIONS
     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wextra>
     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-fdiagnostics-color=always>
     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-fPIC>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-fno-omit-frame-pointer>
     $<$<CXX_COMPILER_ID:MSVC>:/W2>
     $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
     $<$<CXX_COMPILER_ID:MSVC>:/MP>
-    $<$<AND:$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>,$<BOOL:${BUILD_WITH_ASAN}>>:-fno-omit-frame-pointer>
     $<$<AND:$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>,$<BOOL:${BUILD_WITH_ASAN}>>:-fno-optimize-sibling-calls>
     $<$<AND:$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>,$<BOOL:${BUILD_WITH_ASAN}>>:-fsanitize=address>
     $<$<AND:$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>,$<BOOL:${BUILD_WITH_ASAN}>>:-shared-libasan>
@@ -97,6 +100,10 @@ find_package(pybind11 REQUIRED CONFIG)
 if(BUILD_TESTS)
     find_package(GTest REQUIRED CONFIG)
 endif()
+
+if (BUILD_BENCHMARKS)
+    find_package(benchmark REQUIRED)
+endif ()
 ################################################################################
 # VCS info
 ################################################################################
@@ -108,7 +115,7 @@ if (GIT_SCM AND GITDIR)
     # the commit's SHA1, and whether the building workspace was dirty or not
     # describe --match=NeVeRmAtCh --always --tags --abbrev=40 --dirty
     execute_process(COMMAND
-    "${GIT_EXECUTABLE}" --no-pager describe --tags --always --dirty
+        "${GIT_EXECUTABLE}" --no-pager describe --match=Nevermatch --tags --always --dirty
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     OUTPUT_VARIABLE GIT_SHA1
     ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -160,7 +167,11 @@ target_compile_definitions(git-info INTERFACE
     GIT_COMMIT_SUBJECT="${GIT_COMMIT_SUBJECT}"
     GIT_BRANCH="${GIT_BRANCH}"
 )
-configure_file(cmake_templates/BuildInfo.cpp.in ${CMAKE_BINARY_DIR}/generated/BuildInfo.cpp @ONLY)
+configure_file(cmake_templates/BuildInfo.hpp.in ${CMAKE_BINARY_DIR}/generated/build_info/BuildInfo.hpp @ONLY)
+add_library(build_info INTERFACE)
+target_include_directories(build_info INTERFACE
+    ${CMAKE_BINARY_DIR}/generated/build_info
+)
 if(UNIX)
     configure_file(cmake_templates/unix_env.in ${CMAKE_BINARY_DIR}/environment @ONLY)
 endif()
@@ -253,6 +264,7 @@ endif()
 # Add libraries / executables
 ################################################################################
 add_subdirectory(libjupedsim)
+add_subdirectory(libcommon)
 add_subdirectory(libsimulator)
 add_subdirectory(python_bindings_jupedsim)
 
